@@ -17,8 +17,8 @@ Player `stats` are **not** available at arbitrary minutes. Live metadata shows:
 So **5 / 15 / 30 min** becomes **6 / 15 / 30 min** (`360, 900, 1800`). There is
 no 300 s tick. Defaults in code match that grid.
 
-Scope / sizing notes (matches, rate limits, M4 Pro training): see the project
-doc `dataset-scope-plan.md` in the Cursor project store (or ask the maintainer).
+Scope / sizing notes (matches, rate limits, M4 Pro training): see
+[`docs/dataset-scope-plan.md`](docs/dataset-scope-plan.md).
 
 ## Setup
 
@@ -73,7 +73,18 @@ Writes:
 - `data/processed/normalization.json` (mean/std from **train** only)
 - `data/processed/splits.json`, `meta.json`
 
-### 4. Smoke run (live API)
+### 4. Train baseline MLP (+ hero embeddings)
+
+```bash
+deadlock-dataset train --epochs 20 --device auto
+# optional: only the 15-minute tick
+deadlock-dataset train --snapshot-s 900 --out-dir data/models/t900
+```
+
+Checkpoints land in `data/models/baseline/` (`best.pt`, `train_summary.json`).
+On Apple Silicon, `--device auto` prefers MPS.
+
+### 5. Smoke run (live API)
 
 ```bash
 deadlock-dataset smoke --count 5 --snapshots 360,900
@@ -83,6 +94,7 @@ deadlock-dataset smoke --count 5 --snapshots 360,900
 
 ```python
 from deadlock_win_predict.dataset import MatchSnapshotDataset
+from deadlock_win_predict.model import WinPredictor
 from torch.utils.data import DataLoader
 
 ds = MatchSnapshotDataset(
@@ -120,5 +132,8 @@ deadlock_win_predict/
   fetch.py        # cache + checkpoint
   features.py     # snapshot feature extraction
   dataset.py      # parquet + torch Dataset
+  model.py        # MLP + hero embeddings
+  train.py        # baseline training loop
   cli.py
+docs/dataset-scope-plan.md
 ```
